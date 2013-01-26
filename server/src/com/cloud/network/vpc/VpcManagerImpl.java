@@ -1948,7 +1948,7 @@ public class VpcManagerImpl implements VpcManager, Manager{
 
     @Override
     public Network updateVpcGuestNetwork(long networkId, String name, String displayText, Account callerAccount, 
-            User callerUser, String domainSuffix, Long ntwkOffId, Boolean changeCidr) {
+            User callerUser, String domainSuffix, Long ntwkOffId, Boolean changeCidr, String guestVmCidr) {
         NetworkVO network = _ntwkDao.findById(networkId);
         if (network == null) {
             throw new InvalidParameterValueException("Couldn't find network by id");
@@ -1960,7 +1960,7 @@ public class VpcManagerImpl implements VpcManager, Manager{
         }
         
         return _ntwkSvc.updateGuestNetwork(networkId, name, displayText, callerAccount, callerUser, domainSuffix,
-                ntwkOffId, changeCidr);
+                ntwkOffId, changeCidr, guestVmCidr);
     }
 
     @Override

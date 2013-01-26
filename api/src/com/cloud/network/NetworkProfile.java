@@ -39,6 +39,7 @@ public class NetworkProfile implements Network {
     private TrafficType trafficType;
     private String gateway;
     private String cidr;
+    private String guestCidr;
     private long networkOfferingId;
     private long related;
     private String displayText;
@@ -64,6 +65,7 @@ public class NetworkProfile implements Network {
         this.trafficType = network.getTrafficType();
         this.gateway = network.getGateway();
         this.cidr = network.getCidr();
+        this.guestCidr = network.getGuestCidr();
         this.networkOfferingId = network.getNetworkOfferingId();
         this.related = network.getRelated();
         this.displayText = network.getDisplayText();
@@ -225,5 +227,10 @@ public class NetworkProfile implements Network {
     public Long getVpcId() {
         return vpcId;
     }
+
+	@Override
+	public String getGuestCidr() {
+		return guestCidr;
+	}
 
 }

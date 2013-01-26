@@ -1436,8 +1436,11 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
     @DB
     @ActionEvent(eventType = EventTypes.EVENT_NETWORK_UPDATE, eventDescription = "updating network", async = true)
     public Network updateGuestNetwork(long networkId, String name, String displayText, Account callerAccount, 
-            User callerUser, String domainSuffix, Long networkOfferingId, Boolean changeCidr) {
+            User callerUser, String domainSuffix, Long networkOfferingId, Boolean changeCidr, String guestVmCidr) {
         boolean restartNetwork = false;
+        boolean allowReservationWithRestart = false;
+        boolean allowReservation= false;
+        
 
         // verify input parameters
         NetworkVO network = _networksDao.findById(networkId);
@@ -1499,6 +1502,12 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
             }
             
             
+    
+        	// network offering and domain suffix can be updated for Isolated networks only in 3.0
+        	if ((networkOfferingId != null || domainSuffix != null) && network.getGuestType() != GuestType.Isolated) {
+        		throw new InvalidParameterValueException("NetworkOffering and domain suffix upgrade can be perfomed for Isolated networks only");
+        	}
+        	
             //can't update from vpc to non-vpc network offering
             boolean forVpcNew = _configMgr.isOfferingForVpc(networkOffering);
             boolean vorVpcOriginal = _configMgr.isOfferingForVpc(_configMgr.getNetworkOffering(oldNetworkOfferingId));
@@ -1531,6 +1540,12 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
                 networkOfferingChanged = true;
             }
         }
+	
+    //don't allow to simultaneously change network offering and guestvmcidr
+        if ((((networkOfferingChanged == true) && guestVmCidr !=null)) || ((networkOfferingChanged == false) && guestVmCidr ==null)) {
+        	throw new InvalidParameterValueException("Cannot change both network offering and guest VM CIDR at the same time. Please specify only one parameter");	
+        }
+        
         Map<String, String> newSvcProviders = new HashMap<String, String>();
         if (networkOfferingChanged) {
             newSvcProviders = _networkMgr.finalizeServicesAndProvidersForNetwork(_configMgr.getNetworkOffering(networkOfferingId), network.getPhysicalNetworkId());
@@ -1561,7 +1576,102 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
             // have to restart the network
             restartNetwork = true;
         }
+        
+      //IP reservation checks:
+        // allow reservation only to Isolated Guest networks
+        if (network.getTrafficType() != Networks.TrafficType.Guest) {
+        	throw new InvalidParameterValueException("Can't allow networks which traffic type is not " + TrafficType.Guest);
+        }
+        // No guest Vm cidr can be specified in Basic zone
+        DataCenter dc = _dcDao.findById(network.getDataCenterId());
+       if(dc.getNetworkType() == NetworkType.Basic && guestVmCidr != null) {
+        	throw new InvalidParameterValueException("Guest VM CIDR can't be specified for zone of type " + NetworkType.Basic);
+       }
+       //
+       if (network.getGuestType() != GuestType.Isolated) {
+    	   throw new InvalidParameterValueException("Can't allow networks which guest type is not " + GuestType.Isolated);
+       }
+    	String guestCidr = network.getGuestCidr();
+    	//Checks on guestVmcidr        
+    	if (guestVmCidr!= null ) {
+    		if (!NetUtils.isValidCIDR(guestVmCidr)) {
+    			throw new InvalidParameterValueException ("Invalid format of Guest VM CIDR.");
+    		}
+    		if (!NetUtils.validateGuestCidr(guestVmCidr)) {
+    			throw new InvalidParameterValueException ("Invalid format of Guest VM CIDR. Make sure it is RFC1918 compliant. ");
+    		}            	 
+    		if (! NetUtils.isNetworkAWithinNetworkB(guestVmCidr, guestCidr)) {
+    			throw new InvalidParameterValueException ("Guest VM CIDR must be a subset of Guest CIDR : " + guestCidr);
+    		}
+    	}
+   	 
+        	 //so we have a valid guest cidr
+        	 //Check for state of network
+        	 //Count IPs of the vms
+        	 //Check again for cidr
+        	 
+    	if (!(network.getState() == Network.State.Implemented)) {
+    		throw new InvalidParameterValueException ("The network is not in  " +  Network.State.Implemented + " state. Reservation cannot be applied");
+    	}    
+       // if guestVmcidr change occurs then only have reservation
+    	if (guestVmCidr.equals(network.getCidr())) {
+    		s_logger.debug("No change in Guest Vm CIDR detected, not applying reservation ");
+    		restartNetwork = false;
+    	}
+    	
+    	String[] guestVmCidrPair = guestVmCidr.split("\\/");
+        Long size = Long.valueOf(guestVmCidrPair[1]);
+        List<NicVO> nicsPresent = _nicDao.listByNetworkId(networkId);
+        String cidrIpRange[] = NetUtils.getIpRangeFromCidr(guestVmCidrPair[0], size);
+        s_logger.warn("the start ip is : +" +  cidrIpRange[0]);
+        s_logger.warn("the end ip is : +" +  cidrIpRange[1]);
+        long startIp = NetUtils.ip2Long(cidrIpRange[0]);
+        long endIp = NetUtils.ip2Long(cidrIpRange[1]);
+        long range =  endIp - startIp + 1;
+        s_logger.warn("the cidr has these no of ips: " +  range);
+        s_logger.warn("the network has these no of ips: " +  nicsPresent.size());
+        if (range < nicsPresent.size()) {
+        	throw new InvalidParameterValueException ("The Guest VM CIDR size must be at least equal to the number of nics already in use in the network");
+        }	else {
+        	allowReservation = true;
+        }
+        
+        //check if vms outside the guestVmCidr
+        for (NicVO nic : nicsPresent) {
+        	long vmacId = nic.getInstanceId();        	
+        	long nicIp =NetUtils.ip2Long(nic.getIp4Address());
+        	s_logger.warn("the ip address if nic is : " + nic.getIp4Address());
+        	//if nic ip is outside the guest vm cidr
+        	if (nicIp < startIp || nicIp > endIp) {
+        		//check for state of vm
+        		VMInstanceVO vmac = _vmDao.findById(vmacId);
+        		s_logger.warn("the NIC IP is  " + nicIp);
+        		if(vmac.getType().toString().equals("User")) {
+        			restartNetwork= false;
+        			//assuming restart required only if guest vms (users) are outside the range         			
+        			if (!vmac.getState().toString(). equals("Stopped")) {
+        				throw new InvalidParameterValueException("VMs are running outside the Guest VM CIDR. Shutdown the ALL the VMs in the Guest Network" +
+        						"if you want reservation");
+        				}	else {
+        					allowReservationWithRestart = true;
+        				}
+        			}
+        		}	
+        	}
 
+        //allow reservation only if no network off change 
+        if ((networkOfferingChanged == false) && guestVmCidr !=null && (allowReservation == true)) {
+        	//allowReservation = true;
+        	s_logger.warn("There is no offering change and guestVmCidr is valid, further no running vms are there outside the range. The lone case to apply reservation");
+        	restartNetwork = false;        	
+        	if (allowReservationWithRestart == true) {
+        		s_logger.warn("The network will restart to apply IP reservation. Make sure all VMs are shutdown");
+        		restartNetwork = true;
+        		changeCidr = true;
+        	}	else {
+        		network.setCidr(guestVmCidr);
+        	}
+        }
         ReservationContext context = new ReservationContextImpl(null, null, callerUser, callerAccount);
         // 1) Shutdown all the elements and cleanup all the rules. Don't allow to shutdown network in intermediate
         // states - Shutdown and Implementing
@@ -1633,10 +1743,33 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
                 network.setNetworkOfferingId(networkOfferingId);
                 _networksDao.update(networkId, network, _networkMgr.finalizeServicesAndProvidersForNetwork(_configMgr.getNetworkOffering(networkOfferingId), network.getPhysicalNetworkId()));
             }
-        } else {
+        } else if(allowReservationWithRestart == true) {
+            Transaction txn = Transaction.currentTxn();
+            txn.start();
+            network.setCidr(guestVmCidr);
             _networksDao.update(networkId, network);
+            // get all nics using this network
+            // log remove usage events for old offering
+            // log assign usage events for new offering
+            List<NicVO> nics = _nicDao.listByNetworkId(networkId);
+            for (NicVO nic : nics) {
+                long vmId = nic.getInstanceId();
+                VMInstanceVO vm = _vmDao.findById(vmId);
+                if (vm == null) {
+                    s_logger.error("Vm for nic " + nic.getId() + " not found with Vm Id:" + vmId);
+                    continue;
+                }
+                long isDefault = (nic.isDefaultNic()) ? 1 : 0;
+                UsageEventVO usageEvent = new UsageEventVO(EventTypes.EVENT_NETWORK_OFFERING_REMOVE, vm.getAccountId(), vm.getDataCenterIdToDeployIn(), vm.getId(), null, oldNetworkOfferingId, null, 0L);
+                _usageEventDao.persist(usageEvent);
+                usageEvent = new UsageEventVO(EventTypes.EVENT_NETWORK_OFFERING_ASSIGN, vm.getAccountId(), vm.getDataCenterIdToDeployIn(), vm.getId(), vm.getHostName(), networkOfferingId, null, isDefault);
+                _usageEventDao.persist(usageEvent);
+            }
+            txn.commit();
+        } else {
+        	_networksDao.update(networkId, network);
         }
-
+      
         // 3) Implement the elements and rules again
         if (restartNetwork) {
             if (network.getState() != Network.State.Allocated) {

@@ -176,6 +176,7 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
 
             if (userSpecified.getCidr() != null) {
                 network.setCidr(userSpecified.getCidr());
+                network.setGuestCidr(userSpecified.getCidr());
                 network.setGateway(userSpecified.getGateway());
             } else {
                 String guestNetworkCidr = dc.getGuestNetworkCidr();
@@ -183,6 +184,7 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
                     String[] cidrTuple = guestNetworkCidr.split("\\/");
                     network.setGateway(NetUtils.getIpRangeStartIpFromCidr(cidrTuple[0], Long.parseLong(cidrTuple[1])));
                     network.setCidr(guestNetworkCidr);
+                    network.setGuestCidr(guestNetworkCidr);
                 } else if (dc.getNetworkType() == NetworkType.Advanced) {
                     throw new CloudRuntimeException("Can't design network " + network + "; guest CIDR is not configured per zone " + dc);
                 }
@@ -200,6 +202,7 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
             String[] cidrTuple = guestNetworkCidr.split("\\/");
             network.setGateway(NetUtils.getIpRangeStartIpFromCidr(cidrTuple[0], Long.parseLong(cidrTuple[1])));
             network.setCidr(guestNetworkCidr);
+            network.setGuestCidr(guestNetworkCidr);
         }
 
         return network;
@@ -327,6 +330,10 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
 
         if (network.getCidr() != null) {
             implemented.setCidr(network.getCidr());
+        }
+        
+        if (network.getGuestCidr() != null) {
+            implemented.setGuestCidr(network.getGuestCidr());
         }
         return implemented;
     }

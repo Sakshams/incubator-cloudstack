@@ -563,7 +563,7 @@ public class MockNetworkManagerImpl implements NetworkManager, Manager, NetworkS
      */
     @Override
     public Network updateGuestNetwork(long networkId, String name, String displayText, Account callerAccount,
-            User callerUser, String domainSuffix, Long networkOfferingId, Boolean changeCidr) {
+            User callerUser, String domainSuffix, Long networkOfferingId, Boolean changeCidr, String guestVmCidr) {
         // TODO Auto-generated method stub
         return null;
     }

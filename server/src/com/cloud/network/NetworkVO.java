@@ -76,6 +76,9 @@ public class NetworkVO implements Network {
     @Column(name="cidr")
     String cidr;
 
+    @Column(name="guest_cidr")
+    String guestCidr;
+    
     @Column(name="network_offering_id")
     long networkOfferingId;
 
@@ -187,6 +190,7 @@ public class NetworkVO implements Network {
                 related, name, displayText, networkDomain, guestType, dcId, physicalNetworkId, aclType, specifyIpRanges, vpcId);
         this.gateway = that.getGateway();
         this.cidr = that.getCidr();
+        this.guestCidr = that.getCidr();
         this.broadcastUri = that.getBroadcastUri();
         this.broadcastDomainType = that.getBroadcastDomainType();
         this.guruName = guruName;
@@ -347,6 +351,15 @@ public class NetworkVO implements Network {
 
     public void setCidr(String cidr) {
         this.cidr = cidr;
+    }
+    
+    @Override
+    public String getGuestCidr() {
+        return guestCidr;
+    }
+    
+    public void setGuestCidr(String guestCidr) {
+        this.guestCidr = guestCidr;
     }
 
     @Override
