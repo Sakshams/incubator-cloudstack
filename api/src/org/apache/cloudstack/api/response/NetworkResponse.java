@@ -45,6 +45,9 @@ public class NetworkResponse extends BaseResponse implements ControlledEntityRes
     @SerializedName(ApiConstants.TRAFFIC_TYPE) @Param(description="the traffic type of the network")
     private String trafficType;
 
+    @SerializedName(ApiConstants.GUEST_CIDR) @Param(description="the network's gateway")
+    private String guestCidr;
+
     @SerializedName(ApiConstants.GATEWAY) @Param(description="the network's gateway")
     private String gateway;
 
@@ -53,6 +56,9 @@ public class NetworkResponse extends BaseResponse implements ControlledEntityRes
 
     @SerializedName(ApiConstants.CIDR) @Param(description="the cidr the network")
     private String cidr;
+
+    @SerializedName(ApiConstants.RESERVED_IP_RANGE) @Param(description="the network's IP range not to be used by Guest VMs")
+    private String reservedIpRange;
 
     @SerializedName(ApiConstants.ZONE_ID) @Param(description="zone id of the network")
     private String zoneId;
@@ -277,6 +283,14 @@ public class NetworkResponse extends BaseResponse implements ControlledEntityRes
 
     public void setCidr(String cidr) {
         this.cidr = cidr;
+    }
+
+    public void setGuestCidr(String guestCidr) {
+        this.guestCidr = guestCidr;
+    }
+
+    public void setReservedIpRange(String reservedIpRange) {
+        this.reservedIpRange = reservedIpRange;
     }
 
     public void setRestartRequired(Boolean restartRequired) {

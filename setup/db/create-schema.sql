@@ -206,7 +206,8 @@ CREATE TABLE `cloud`.`networks` (
   `broadcast_domain_type` varchar(32) NOT NULL COMMENT 'type of broadcast domain used',
   `broadcast_uri` varchar(255) COMMENT 'broadcast domain specifier',
   `gateway` varchar(15) COMMENT 'gateway for this network configuration',
-  `cidr` varchar(18) COMMENT 'network cidr', 
+  `cidr` varchar(18) COMMENT 'network cidr',
+  `guest_cidr` varchar(18) COMMENT 'guest cidr'
   `mode` varchar(32) COMMENT 'How to retrieve ip address in this network',
   `network_offering_id` bigint unsigned NOT NULL COMMENT 'network offering id that this configuration is created from',
   `physical_network_id` bigint unsigned COMMENT 'physical network id that this configuration is based on',

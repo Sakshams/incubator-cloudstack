@@ -428,6 +428,9 @@ public class ApiConstants {
     public static final String COUNTERPARAM_LIST = "counterparam";
     public static final String AUTOSCALE_USER_ID = "autoscaleuserid";
 	public static final String GUEST_VM_CIDR = "guestvmcidr";
+    public static final String GUEST_CIDR = "guestcidr";
+    public static final String RESERVED_IP_RANGE = "reservediprange";
+    
 
     public enum HostDetails {
         all, capacity, events, stats, min;

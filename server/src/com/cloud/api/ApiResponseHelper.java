@@ -2148,10 +2148,41 @@ public class ApiResponseHelper implements ResponseGenerator {
 
         // FIXME - either set netmask or cidr
         response.setCidr(network.getCidr());
-        if (network.getCidr() != null) {
-            response.setNetmask(NetUtils.cidr2Netmask(network.getCidr()));
+        response.setGuestCidr(network.getGuestCidr());
+        if (network.getGuestCidr() != null) {
+            response.setNetmask(NetUtils.cidr2Netmask(network.getGuestCidr()));
         }
 
+        //create response for reserved IP ranges
+        String  reservation = null;
+        if(network.getCidr() != null) {
+            if (NetUtils.isNetworkAWithinNetworkB(network.getCidr(), network.getGuestCidr())) {
+                String[] guestVmCidrPair = network.getCidr().split("\\/");
+                String[] guestCidrPair = network.getGuestCidr().split("\\/");
+
+                Long guestVmCidrSize = Long.valueOf(guestVmCidrPair[1]);
+                Long guestCidrSize = Long.valueOf(guestCidrPair[1]);
+
+                String[] guestVmIpRange = NetUtils.getIpRangeFromCidr(guestVmCidrPair[0], guestVmCidrSize);
+                String[] guestIpRange = NetUtils.getIpRangeFromCidr(guestCidrPair[0], guestCidrSize);
+                long startGuestIp = NetUtils.ip2Long(guestIpRange[0]);
+                long endGuestIp = NetUtils.ip2Long(guestIpRange[1]);
+                long startVmIp = NetUtils.ip2Long(guestVmIpRange[0]);
+                long endVmIp = NetUtils.ip2Long(guestVmIpRange[1]);
+
+                if (startVmIp == startGuestIp && endVmIp < endGuestIp -1) {
+                    reservation = (NetUtils.long2Ip(endVmIp + 1) + " - " + NetUtils.long2Ip(endGuestIp));
+                }
+                if (endVmIp == endGuestIp && startVmIp > startGuestIp +1) {
+                    reservation = (NetUtils.long2Ip(startGuestIp) + "-" + NetUtils.long2Ip(startVmIp-1));
+                } 
+                if(startVmIp > startGuestIp+1 && endVmIp < endGuestIp-1) {
+                reservation = (NetUtils.long2Ip(startGuestIp) + "-" +  NetUtils.long2Ip(startVmIp-1) + " ,  " + 
+                        NetUtils.long2Ip(endVmIp + 1) + "-"+  NetUtils.long2Ip(endGuestIp));
+                }
+            } 
+        }   
+        response.setReservedIpRange(reservation);
         //return vlan information only to Root admin
         if (network.getBroadcastUri() != null && UserContext.current().getCaller().getType() == Account.ACCOUNT_TYPE_ADMIN) {
             String broadcastUri = network.getBroadcastUri().toString();
