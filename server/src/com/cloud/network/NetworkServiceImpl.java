@@ -1497,14 +1497,8 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
                 ex.addProxyObject(networkOffering, networkOfferingId, "networkOfferingId");                
                 throw ex;
             }
-            
-            
 
-        	// network offering and domain suffix can be updated for Isolated networks only in 3.0
-        	if ((networkOfferingId != null || domainSuffix != null) && network.getGuestType() != GuestType.Isolated) {
-        		throw new InvalidParameterValueException("NetworkOffering and domain suffix upgrade can be perfomed for Isolated networks only");
-        	}
-        	
+
             //can't update from vpc to non-vpc network offering
             boolean forVpcNew = _configMgr.isOfferingForVpc(networkOffering);
             boolean vorVpcOriginal = _configMgr.isOfferingForVpc(_configMgr.getNetworkOffering(oldNetworkOfferingId));
@@ -1612,18 +1606,19 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
             s_logger.info("The  guestvmcidr  has " +  range + " ips");
 
             for (NicVO nic : nicsPresent) {
-                long nicIp =NetUtils.ip2Long(nic.getIp4Address());
+                long nicIp = NetUtils.ip2Long(nic.getIp4Address());
                 //if nic ip is outside the guest vm cidr
                 if (nicIp < startIp || nicIp > endIp) {
-                    if(nic.getRemoved() != null) {
-                            throw new InvalidParameterValueException("Nics exist outside the Guest VM CIDR. Cannot apply reservation " + nic.getIp4Address());
+                    if(nic.getRemoved() == null) {
+                            throw new InvalidParameterValueException("Active nics exist outside the Guest VM CIDR. Cannot apply reservation ");
                         }
                     }
                 }
-            restartNetwork = false;
-            changeCidr = false;
             network.setCidr(guestVmCidr);
             _networksDao.update(networkId, network);
+            s_logger.info("Reservation has been applied. The new CIDR for Guests Vms is " + guestVmCidr);
+            restartNetwork = false;
+            changeCidr = false;
         }
 
         ReservationContext context = new ReservationContextImpl(null, null, callerUser, callerAccount);
@@ -1644,6 +1639,9 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
                 } else {
                     // We need to shutdown the network, since we want to re-implement the network.
                     s_logger.debug("Shutting down network id=" + networkId + " as a part of network update");
+                    if(NetUtils.isNetworkAWithinNetworkB(network.getCidr(), network.getGuestCidr() ) && !guestCidr.equals(network.getCidr())) {
+                        s_logger.warn ("Existing IP reservation will become ineffective. Need to reapply reservation after network reimplementation.");
+                    }
 
                     if (!_networkMgr.shutdownNetwork(network.getId(), context, true)) {
                         s_logger.warn("Failed to shutdown the network as a part of update to network with specified id");

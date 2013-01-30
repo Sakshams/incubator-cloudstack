@@ -306,10 +306,6 @@ public class MockNetworkManagerImpl implements NetworkManager, NetworkService, M
         return null;
     }
 
-
-
-
-
     /* (non-Javadoc)
      * @see com.cloud.network.NetworkService#createPhysicalNetwork(java.lang.Long, java.lang.String, java.lang.String, java.util.List, java.lang.String, java.lang.Long, java.util.List, java.lang.String)
      */

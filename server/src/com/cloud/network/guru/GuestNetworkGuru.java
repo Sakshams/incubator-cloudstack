@@ -43,11 +43,13 @@ import com.cloud.exception.InsufficientVirtualNetworkCapcityException;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.network.IPAddressVO;
 import com.cloud.network.Network;
+import com.cloud.network.Network.GuestType;
 import com.cloud.network.Network.State;
 import com.cloud.network.NetworkManager;
 import com.cloud.network.NetworkModel;
 import com.cloud.network.NetworkProfile;
 import com.cloud.network.NetworkVO;
+import com.cloud.network.Networks;
 import com.cloud.network.Networks.AddressFormat;
 import com.cloud.network.Networks.BroadcastDomainType;
 import com.cloud.network.Networks.Mode;
@@ -176,7 +178,6 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
 
             if (userSpecified.getCidr() != null) {
                 network.setCidr(userSpecified.getCidr());
-                network.setGuestCidr(userSpecified.getCidr());
                 network.setGateway(userSpecified.getGateway());
             } else {
                 String guestNetworkCidr = dc.getGuestNetworkCidr();
@@ -184,7 +185,6 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
                     String[] cidrTuple = guestNetworkCidr.split("\\/");
                     network.setGateway(NetUtils.getIpRangeStartIpFromCidr(cidrTuple[0], Long.parseLong(cidrTuple[1])));
                     network.setCidr(guestNetworkCidr);
-                    network.setGuestCidr(guestNetworkCidr);
                 } else if (dc.getNetworkType() == NetworkType.Advanced) {
                     throw new CloudRuntimeException("Can't design network " + network + "; guest CIDR is not configured per zone " + dc);
                 }
@@ -202,7 +202,10 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
             String[] cidrTuple = guestNetworkCidr.split("\\/");
             network.setGateway(NetUtils.getIpRangeStartIpFromCidr(cidrTuple[0], Long.parseLong(cidrTuple[1])));
             network.setCidr(guestNetworkCidr);
-            network.setGuestCidr(guestNetworkCidr);
+        }
+
+        if(network.getCidr() !=null && network.getGuestType() == GuestType.Isolated) {
+            network.setGuestCidr(network.getCidr());
         }
 
         return network;
