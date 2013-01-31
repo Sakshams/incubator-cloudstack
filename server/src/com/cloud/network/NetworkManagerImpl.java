@@ -1430,7 +1430,7 @@ public class NetworkManagerImpl implements NetworkManager, Manager, Listener {
             _networksDao.update(networkId, network);
 
             Network result = guru.implement(network, offering, dest, context);
-            network.setGuestCidr(result.getGuestCidr());
+            network.setGuestCidr(result.getCidr());
             network.setCidr(result.getCidr());
             network.setBroadcastUri(result.getBroadcastUri());
             network.setGateway(result.getGateway());

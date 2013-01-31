@@ -2151,6 +2151,8 @@ public class ApiResponseHelper implements ResponseGenerator {
         response.setGuestCidr(network.getGuestCidr());
         if (network.getGuestCidr() != null) {
             response.setNetmask(NetUtils.cidr2Netmask(network.getGuestCidr()));
+        } else {
+            response.setNetmask(NetUtils.cidr2Netmask(network.getCidr()));
         }
 
         //create response for reserved IP ranges
@@ -2175,13 +2177,13 @@ public class ApiResponseHelper implements ResponseGenerator {
                 }
                 if (endVmIp == endGuestIp && startVmIp > startGuestIp +1) {
                     reservation = (NetUtils.long2Ip(startGuestIp) + "-" + NetUtils.long2Ip(startVmIp-1));
-                } 
+                }
                 if(startVmIp > startGuestIp+1 && endVmIp < endGuestIp-1) {
-                reservation = (NetUtils.long2Ip(startGuestIp) + "-" +  NetUtils.long2Ip(startVmIp-1) + " ,  " + 
+                reservation = (NetUtils.long2Ip(startGuestIp) + "-" +  NetUtils.long2Ip(startVmIp-1) + " ,  " +
                         NetUtils.long2Ip(endVmIp + 1) + "-"+  NetUtils.long2Ip(endGuestIp));
                 }
-            } 
-        }   
+            }
+        }
         response.setReservedIpRange(reservation);
         //return vlan information only to Root admin
         if (network.getBroadcastUri() != null && UserContext.current().getCaller().getType() == Account.ACCOUNT_TYPE_ADMIN) {

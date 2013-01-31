@@ -430,7 +430,6 @@ public class ApiConstants {
 	public static final String GUEST_VM_CIDR = "guestvmcidr";
     public static final String GUEST_CIDR = "guestcidr";
     public static final String RESERVED_IP_RANGE = "reservediprange";
-    
 
     public enum HostDetails {
         all, capacity, events, stats, min;

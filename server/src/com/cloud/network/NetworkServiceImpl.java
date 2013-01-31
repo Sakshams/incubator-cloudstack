@@ -1497,8 +1497,6 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
                 ex.addProxyObject(networkOffering, networkOfferingId, "networkOfferingId");                
                 throw ex;
             }
-
-
             //can't update from vpc to non-vpc network offering
             boolean forVpcNew = _configMgr.isOfferingForVpc(networkOffering);
             boolean vorVpcOriginal = _configMgr.isOfferingForVpc(_configMgr.getNetworkOffering(oldNetworkOfferingId));
@@ -1531,7 +1529,7 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
                 networkOfferingChanged = true;
             }
         }
-	
+
         Map<String, String> newSvcProviders = new HashMap<String, String>();
         if (networkOfferingChanged) {
             newSvcProviders = _networkMgr.finalizeServicesAndProvidersForNetwork(_configMgr.getNetworkOffering(networkOfferingId), network.getPhysicalNetworkId());
@@ -1575,6 +1573,9 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
             if (network.getGuestType() != GuestType.Isolated) {
                 throw new InvalidParameterValueException("Can't allow networks which guest type is not " + GuestType.Isolated);
             }
+            if (!(network.getState() == Network.State.Implemented)) {
+                throw new InvalidParameterValueException ("The network is not in  " +  Network.State.Implemented + " state. Reservation cannot be applied");
+            }
             if (!NetUtils.isValidCIDR(guestVmCidr)) {
                 throw new InvalidParameterValueException ("Invalid format of Guest VM CIDR.");
             }
@@ -1583,9 +1584,6 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
             }
             if (! NetUtils.isNetworkAWithinNetworkB(guestVmCidr, guestCidr)) {
                 throw new InvalidParameterValueException ("Guest VM CIDR cannot be a superset of Guest CIDR : " + guestCidr);
-            }
-            if (!(network.getState() == Network.State.Implemented)) {
-                throw new InvalidParameterValueException ("The network is not in  " +  Network.State.Implemented + " state. Reservation cannot be applied");
             }
             if (networkOfferingChanged == true) {
                 throw new InvalidParameterValueException("Cannot specify both nework offering change and guestVmCidr at same time.");
@@ -1696,9 +1694,9 @@ public class NetworkServiceImpl implements  NetworkService, Manager {
                 _networksDao.update(networkId, network, _networkMgr.finalizeServicesAndProvidersForNetwork(_configMgr.getNetworkOffering(networkOfferingId), network.getPhysicalNetworkId()));
             }
         }   else {
-        	_networksDao.update(networkId, network);
+            _networksDao.update(networkId, network);
         }
-      
+
         // 3) Implement the elements and rules again
         if (restartNetwork) {
             if (network.getState() != Network.State.Allocated) {

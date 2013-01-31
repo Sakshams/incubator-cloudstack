@@ -49,7 +49,6 @@ import com.cloud.network.NetworkManager;
 import com.cloud.network.NetworkModel;
 import com.cloud.network.NetworkProfile;
 import com.cloud.network.NetworkVO;
-import com.cloud.network.Networks;
 import com.cloud.network.Networks.AddressFormat;
 import com.cloud.network.Networks.BroadcastDomainType;
 import com.cloud.network.Networks.Mode;
@@ -333,11 +332,9 @@ public abstract class GuestNetworkGuru extends AdapterBase implements NetworkGur
 
         if (network.getCidr() != null) {
             implemented.setCidr(network.getCidr());
+            implemented.setGuestCidr(network.getCidr());
         }
-        
-        if (network.getGuestCidr() != null) {
-            implemented.setGuestCidr(network.getGuestCidr());
-        }
+
         return implemented;
     }
 

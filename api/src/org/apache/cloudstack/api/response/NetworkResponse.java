@@ -45,7 +45,7 @@ public class NetworkResponse extends BaseResponse implements ControlledEntityRes
     @SerializedName(ApiConstants.TRAFFIC_TYPE) @Param(description="the traffic type of the network")
     private String trafficType;
 
-    @SerializedName(ApiConstants.GUEST_CIDR) @Param(description="the network's gateway")
+    @SerializedName(ApiConstants.GUEST_CIDR) @Param(description="the cidr of guest network")
     private String guestCidr;
 
     @SerializedName(ApiConstants.GATEWAY) @Param(description="the network's gateway")

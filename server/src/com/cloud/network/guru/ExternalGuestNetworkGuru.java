@@ -165,6 +165,7 @@ public class ExternalGuestNetworkGuru extends GuestNetworkGuru {
         long newCidrAddress = (NetUtils.ip2Long(oldCidrAddress) & 0xff000000) | (offset << (32 - cidrSize));
         implemented.setGateway(NetUtils.long2Ip(newCidrAddress + 1));
         implemented.setGuestCidr(NetUtils.long2Ip(newCidrAddress) + "/" + cidrSize);
+        implemented.setCidr(NetUtils.long2Ip(newCidrAddress) + "/" + cidrSize);
         implemented.setState(State.Implemented);
 
         // Mask the Ipv4 address of all nics that use this network with the new guest VLAN offset

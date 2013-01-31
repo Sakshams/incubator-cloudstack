@@ -64,7 +64,7 @@ public class UpdateNetworkCmd extends BaseAsyncCmd {
     @Parameter(name=ApiConstants.NETWORK_OFFERING_ID, type=CommandType.UUID, entityType = NetworkOfferingResponse.class,
             description="network offering ID")
     private Long networkOfferingId;
-    
+
     @Parameter(name=ApiConstants.GUEST_VM_CIDR, type=CommandType.STRING, description="CIDR for Guest VMs")
     private String guestVmCidr;
 
@@ -98,9 +98,9 @@ public class UpdateNetworkCmd extends BaseAsyncCmd {
         }
         return false;
     }
-    
+
     private String getGuestVmCidr() {
-    	return guestVmCidr;
+        return guestVmCidr;
     }
     /////////////////////////////////////////////////////
     /////////////// API Implementation///////////////////

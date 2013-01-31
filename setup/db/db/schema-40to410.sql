@@ -80,6 +80,7 @@ ALTER TABLE async_job modify job_cmd VARCHAR(255);
 ALTER TABLE `cloud`.`alert` ADD INDEX `last_sent` (`last_sent` DESC) ;
 
 ALTER TABLE `cloud`.`networks` ADD COLUMN `guest_cidr` VARCHAR(18);
+UPDATE `cloud`.`networks` set guest_cidr=cidr WHERE traffic_type='Guest' and guest_type='Isolated';
 
 -- populate uuid column with db id if uuid is null
 UPDATE `cloud`.`account` set uuid=id WHERE uuid is NULL;
